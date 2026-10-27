@@ -13,8 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +35,10 @@ import com.unsa.lab07lista.ui.theme.IDNP_lab_07Theme
 
 /**
  * Pantalla principal que muestra la lista de apuntes utilizando un [LazyColumn],
- * incorporando selección interactiva, separación visual y jerarquía tipográfica.
+ * incorporando selección interactiva, separación visual, jerarquía tipográfica
+ * y detalle breve mediante [ModalBottomSheet].
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApuntesListaScreen(
     modifier: Modifier = Modifier,
@@ -41,6 +46,9 @@ fun ApuntesListaScreen(
     contentPadding: PaddingValues = PaddingValues(16.dp),
 ) {
     var selectedApunteId by remember { mutableStateOf<Int?>(null) }
+    var showBottomSheet by remember { mutableStateOf(value = false) }
+    
+    val sheetState = rememberModalBottomSheetState()
     val apunteSeleccionado = apuntes.find { it.id == selectedApunteId }
 
     LazyColumn(
@@ -52,7 +60,7 @@ fun ApuntesListaScreen(
             HeaderSeccion(totalRegistros = apuntes.size)
         }
 
-        // Banner informativo cuando hay un apunte seleccionado (Acción de selección)
+        // Banner informativo superior cuando hay un apunte seleccionado
         if (apunteSeleccionado != null) {
             item {
                 Card(
@@ -79,7 +87,7 @@ fun ApuntesListaScreen(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Curso: ${apunteSeleccionado.curso} (${apunteSeleccionado.paginas} págs.)",
+                            text = "Toque cualquier tarjeta para ver el detalle completo en panel inferior.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         )
@@ -96,7 +104,91 @@ fun ApuntesListaScreen(
                 apunte = apunte,
                 isSelected = apunte.id == selectedApunteId,
             ) {
-                selectedApunteId = if (selectedApunteId == apunte.id) null else apunte.id
+                selectedApunteId = apunte.id
+                showBottomSheet = true
+            }
+        }
+    }
+
+    // Modal Bottom Sheet con el detalle breve del apunte seleccionado
+    if ((showBottomSheet) && (apunteSeleccionado != null)) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showBottomSheet = false
+            },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 36.dp, top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = apunteSeleccionado.curso,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Text(
+                    text = apunteSeleccionado.titulo,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Autor: ${apunteSeleccionado.autor}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Semana ${apunteSeleccionado.semana}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Descripción detallada:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Text(
+                    text = apunteSeleccionado.descripcion,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Publicación: ${apunteSeleccionado.fechaPublicacion}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Extensión: ${apunteSeleccionado.paginas} páginas",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -125,7 +217,7 @@ private fun HeaderSeccion(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = "Semestre 2026-B • Toque una tarjeta para seleccionar",
+                text = "Semestre 2026-B • Toque una tarjeta para ver detalle",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
